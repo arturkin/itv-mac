@@ -1,0 +1,83 @@
+name: itvlive
+options:
+  bundleIdPrefix: app.itvlive
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  ITVKit:
+    path: Packages/ITVKit
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGNING_REQUIRED: "YES"
+    CODE_SIGNING_ALLOWED: "YES"
+    ENABLE_HARDENED_RUNTIME: "NO"
+
+targets:
+  ITVLive:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+    dependencies:
+      - package: ITVKit
+    settings:
+      base:
+        PRODUCT_NAME: ITVLive
+        PRODUCT_BUNDLE_IDENTIFIER: app.itvlive.ITVLive
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/ITVLive.entitlements
+        SWIFT_STRICT_CONCURRENCY: complete
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  ITVLiveTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: AppTests
+    dependencies:
+      - target: ITVLive
+      - package: ITVKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.itvlive.ITVLiveTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_STRICT_CONCURRENCY: complete
+
+  ITVLiveUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: ITVLive
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.itvlive.ITVLiveUITests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: ITVLive
+
+schemes:
+  ITVLive:
+    build:
+      targets:
+        ITVLive: all
+        ITVLiveTests: [test]
+        ITVLiveUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ITVLiveTests
+        - ITVLiveUITests

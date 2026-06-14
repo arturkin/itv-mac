@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tv>
+  <channel id="ch057">
+    <display-name>Матч! HD</display-name>
+  </channel>
+  <channel id="ch003">
+    <display-name>Первый Канал HD</display-name>
+  </channel>
+  <programme channel="ch057" start="20260614120000 +0300" stop="20260614133000 +0300">
+    <title lang="ru">Футбол. Чемпионат</title>
+    <desc>Прямая трансляция матча.</desc>
+  </programme>
+  <programme channel="ch057" start="20260614133000 +0300" stop="20260614140000 +0300">
+    <title>Новости спорта</title>
+    <desc><![CDATA[Обзор & итоги <дня>]]></desc>
+  </programme>
+  <programme channel="ch003" start="20260614120000 +0000" stop="20260614130000 +0000">
+    <title>Время покажет</title>
+    <desc>Дискуссия в студии.</desc>
+  </programme>
+</tv>

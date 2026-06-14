@@ -1,0 +1,24 @@
+# Generated Xcode project (regenerate with `xcodegen generate`)
+itvlive.xcodeproj/
+
+# Build output
+build/
+.build/
+DerivedData/
+
+# Secrets — the playlist URL embeds a private subscription token. NEVER commit it.
+# Ignore every .env variant; keep only the placeholder *.example templates.
+.env
+.env.*
+!.env.example
+!.env.qa.example
+
+# QA artifacts (regenerated locally; may echo the live URL/token)
+.qa-logs/
+qa-report.md
+
+# macOS
+.DS_Store
+
+# QA visual snapshots (real subscription content — not committed)
+qa-snapshots/

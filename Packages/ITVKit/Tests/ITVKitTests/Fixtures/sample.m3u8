@@ -1,0 +1,11 @@
+#EXTM3U url-tvg="https://epg.example/epg.xml.gz"
+#EXTINF:-1 tvg-id="ch057" tvg-rec="10" tvg-logo="https://logo.example/ch057.png"  group-title="Спорт", Матч! HD
+#EXTGRP:1. Спорт
+https://cloud02.cdn.example/ch057/index.m3u8?token=TESTTOKEN57
+#EXTINF:-1 tvg-id="ch064" tvg-rec="7" tvg-logo="https://logo.example/ch064.png"  group-title="Спорт", Матч! Арена HD
+#EXTGRP:1. Спорт
+https://cloud03.cdn.example/ch064/index.m3u8?token=TESTTOKEN64
+#EXTINF:-1 tvg-id="ch003" tvg-logo="https://logo.example/ch003.png" group-title="Новости", Первый Канал HD
+https://cloud01.cdn.example/ch003/index.m3u8?token=TESTTOKEN03
+#EXTINF:-1 tvg-id="ch500" tvg-rec="0" tvg-logo="https://logo.example/ch500.png" group-title="Кино", Кинокомедия
+https://cloud01.cdn.example/ch500/index.m3u8?token=TESTTOKEN500
