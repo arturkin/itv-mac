@@ -124,12 +124,12 @@ snap_status() { case "$1" in 0) echo "✅ PASS";; 2) echo "⏭️ SKIP";; *) ech
     echo
     echo "| File | What it shows |"
     echo "|------|----------------|"
-    echo "| \`window.png\` | Full app: sidebar (groups, favorites, continue-watching) + live video + program timeline |"
+    echo "| \`window.png\` | Full app: sidebar (groups, favorites) + live video + program timeline |"
     echo "| \`frame_live.png\` | A real decoded frame from the **live** stream |"
     echo "| \`frame_archive.png\` | A real decoded frame from a **catch-up/archive** programme (finite VOD) |"
     echo "| \`timeline_today.png\` | Today's program timeline with the **NOW** programme highlighted |"
     echo "| \`timeline_prevday.png\` | A **previous archive day** browsed without starting playback (headline UX) |"
-    echo "| \`sidebar.png\` | Channel groups + favorites + continue-watching + now/next subtitles |"
+    echo "| \`sidebar.png\` | Channel groups + favorites + now/next subtitles |"
     echo "| \`search.png\` | Search matches across channels **and** programme titles (Cyrillic-aware) |"
     echo
   fi
@@ -140,12 +140,16 @@ snap_status() { case "$1" in 0) echo "✅ PASS";; 2) echo "⏭️ SKIP";; *) ech
   echo "| Playlist parsing (CRLF, tvg-rec, groups, tokens) | M3UPlaylistParserTests + live | $(status_of $L1_RC) |"
   echo "| EPG fetch + gunzip + XMLTV parse + index | Gunzip/XMLTV/EPGIndex tests + live | $(status_of $L1_RC) |"
   echo "| Catch-up URL correctness (VOD/EVENT, clamp, UTC) | ArchiveURLBuilderTests + live archive fetch | $(status_of $L1_RC) |"
+  echo "| Time-shift seek by time (no EPG, 30-min) | ArchiveURLBuilderTests + PlayerControllerTests + live EVENT fetch + UI test | $(status_of $L1_RC) |"
+  echo "| AirPlay cast to TV (external playback) | allowsExternalPlayback + AVRoutePickerView (manual) + Layer 0 \`window.png\` | manual |"
+  echo "| Resizable guide panel | UI test testTimelinePanelHasResizeHandle | $(status_of $L3_RC) |"
+  echo "| Auto-refresh playlist + EPG (start + hourly) | AppModel.startAutoRefresh + EPGStore maxAge | $(status_of $L2_RC) |"
   echo "| Live playback | Layer 2 test + Layer 0 \`frame_live.png\` (real decode) | $(status_of $L2_RC) |"
   echo "| Catch-up/archive playback (finite, seekable) | Layer 2 test + Layer 0 \`frame_archive.png\` (real decode) | $(status_of $L2_RC) |"
   echo "| Main window / app shell | Layer 2 testMainWindowIsCreated + Layer 0 \`window.png\` | $(status_of $L2_RC) |"
   echo "| Search (channels + programmes, Cyrillic) | ProgrammeSearchIndexTests + Layer 0 \`search.png\` | $(snap_status $SNAP_RC) |"
   echo "| Favorites + ordering | PersistenceStoreTests + Layer 0 \`sidebar.png\` | $(status_of $L1_RC) |"
-  echo "| Continue-watching / resume | PersistenceStoreTests + Layer 0 \`sidebar.png\` | $(status_of $L1_RC) |"
+  echo "| Resume positions | PersistenceStoreTests | $(status_of $L1_RC) |"
   echo "| Timeline browse without playback | Layer 0 \`timeline_prevday.png\` + UI test | $(snap_status $SNAP_RC) |"
   echo "| PiP + audio/subtitle tracks | AVPlayerView native controls (manual) | manual |"
   echo

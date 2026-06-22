@@ -74,6 +74,35 @@ final class ArchiveURLBuilderTests: XCTestCase {
                        .archive(start: expectedStart, duration: 1800))
     }
 
+    // MARK: - Time-shift (EPG-independent seeking by time)
+
+    func testTimeShiftBuildsEventURLFromAbsoluteInstant() {
+        let target = now.addingTimeInterval(-1800) // 30 min ago
+        let url = ArchiveURLBuilder.timeShiftURL(for: channel(recDays: 10), to: target, now: now)
+        let expectedStart = Int(now.timeIntervalSince1970) - 1800
+        XCTAssertEqual(url?.absoluteString,
+                       "https://cloud02.cdn.example/ch057/index-\(expectedStart)-now.m3u8?token=TOK")
+    }
+
+    func testTimeShiftClampsToArchiveWindowStart() {
+        // 12 days back but only a 10-day archive → clamp to the window start.
+        let target = now.addingTimeInterval(-12 * 86400)
+        let clamped = ArchiveURLBuilder.clampToArchiveWindow(target, recDays: 10, now: now)
+        XCTAssertEqual(clamped, now.addingTimeInterval(-10 * 86400))
+    }
+
+    func testTimeShiftRejectsLiveOrFutureInstant() {
+        XCTAssertNil(ArchiveURLBuilder.clampToArchiveWindow(now, recDays: 10, now: now))
+        XCTAssertNil(ArchiveURLBuilder.clampToArchiveWindow(now.addingTimeInterval(60), recDays: 10, now: now))
+        XCTAssertNil(ArchiveURLBuilder.timeShiftURL(for: channel(recDays: 10), to: now, now: now))
+    }
+
+    func testTimeShiftRejectsChannelWithoutArchive() {
+        let target = now.addingTimeInterval(-1800)
+        XCTAssertNil(ArchiveURLBuilder.clampToArchiveWindow(target, recDays: 0, now: now))
+        XCTAssertNil(ArchiveURLBuilder.timeShiftURL(for: channel(recDays: 0), to: target, now: now))
+    }
+
     func testTimestampMathIsTimezoneIndependent() {
         // The builder uses timeIntervalSince1970, so the process TZ must not matter.
         let p = prog(start: -3600, stop: -1800)

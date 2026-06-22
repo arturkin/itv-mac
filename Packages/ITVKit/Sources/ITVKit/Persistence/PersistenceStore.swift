@@ -1,24 +1,5 @@
 import Foundation
 
-/// A recently-watched entry. `programmeStart == nil` means it was watched live.
-public struct RecentItem: Codable, Sendable, Hashable, Identifiable {
-    public let channelID: String
-    public let programmeStart: Date?
-    public let title: String
-    public let lastPlayed: Date
-
-    public init(channelID: String, programmeStart: Date?, title: String, lastPlayed: Date) {
-        self.channelID = channelID
-        self.programmeStart = programmeStart
-        self.title = title
-        self.lastPlayed = lastPlayed
-    }
-
-    public var id: String {
-        "\(channelID)@\(programmeStart.map { Int($0.timeIntervalSince1970) } ?? -1)"
-    }
-}
-
 /// Stable key for a resumable catch-up playback position.
 public enum ResumeKey {
     public static func make(channelID: String, programmeStart: Date) -> String {
@@ -26,21 +7,17 @@ public enum ResumeKey {
     }
 }
 
-/// On-disk persistence for favorites, resume positions and recently-watched,
-/// as atomic JSON files. An `actor` so it's safe to call from anywhere; corrupt
-/// files degrade to empty defaults rather than throwing.
+/// On-disk persistence for favorites and resume positions, as atomic JSON files.
+/// An `actor` so it's safe to call from anywhere; corrupt files degrade to empty
+/// defaults rather than throwing.
 public actor PersistenceStore {
     private let favoritesURL: URL
     private let resumeURL: URL
-    private let recentsURL: URL
-    private let recentsLimit: Int
 
-    public init(directory: URL, recentsLimit: Int = 50) throws {
+    public init(directory: URL) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         favoritesURL = directory.appendingPathComponent("favorites.json")
         resumeURL = directory.appendingPathComponent("resume.json")
-        recentsURL = directory.appendingPathComponent("recents.json")
-        self.recentsLimit = recentsLimit
     }
 
     // MARK: Favorites (ordered channel IDs)
@@ -64,17 +41,6 @@ public actor PersistenceStore {
         var map = loadResume()
         map[key] = nil
         encode(map, resumeURL)
-    }
-
-    // MARK: Recently watched (most-recent first, deduped, capped)
-
-    public func loadRecents() -> [RecentItem] { decode([RecentItem].self, recentsURL) ?? [] }
-
-    public func addRecent(_ item: RecentItem) {
-        var items = loadRecents().filter { $0.id != item.id }
-        items.insert(item, at: 0)
-        if items.count > recentsLimit { items = Array(items.prefix(recentsLimit)) }
-        encode(items, recentsURL)
     }
 
     // MARK: - JSON helpers

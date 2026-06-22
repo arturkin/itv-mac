@@ -29,6 +29,7 @@ Base = live URL minus `/index.m3u8?...` → `https://cloud02.03cdn.wf/ch057`. Al
 - Server **rounds `<startUnix>` to a segment/GOP boundary** (~tens of seconds). Acceptable for catch-up; optionally pad start a few seconds.
 - AVPlayer resolves child playlists from the master — we only ever construct the **master** URL.
 - **Decision:** primary catch-up = `archive-<start>-<dur>` (VOD); in-progress = `index-<start>-now` (EVENT); live = `index.m3u8`. `timeshift_abs` fallback not needed (builder keeps it for robustness).
+- **Time-shift / seek-by-time (no EPG):** `index-<start>-now` (EVENT) is reused for an *arbitrary* past `start` (clamped to the `recDays` window). It plays continuously from that instant to the live edge and exposes a seekable range, so the 30-minute back/forward transport works on any archive channel without programme metadata.
 
 ## EPG
 - `https://ru.itv.tools/epg/<id>/epgfull.xml.gz` — **23 MB gzip**, magic `1f8b`.

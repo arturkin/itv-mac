@@ -1,19 +1,34 @@
 # itv.live — native macOS TV client
 
 A native SwiftUI / AVKit app for watching itv.live: live channels, the full EPG,
-and catch-up/archive playback — with favorites, search, continue-watching,
-Picture-in-Picture and audio/subtitle track selection. Zero external runtime
-dependencies (Apple AVFoundation plays the HLS streams directly).
+and catch-up/archive playback — with favorites, search, **time-shift seeking**,
+**AirPlay casting to the TV**, a **resizable guide panel**, Picture-in-Picture and
+audio/subtitle track selection. Zero external runtime dependencies (Apple
+AVFoundation plays the HLS streams directly).
 
 ## Layout
 
 - **Sidebar** — channel groups, a pinned **Favorites** section (drag to reorder),
-  **Continue Watching**, and a search field (channels + programme titles).
+  and a search field (channels + programme titles).
 - **Player** — large AVKit player with native transport, PiP button, full-screen,
-  and the audio/subtitle menu.
-- **Program timeline** (below the player) — scroll a channel's history day by day
-  back to its archive limit **without starting playback**; click a past programme
-  to play catch-up, or "Go Live".
+  the audio/subtitle menu, and an **AirPlay** button to send the channel to a TV.
+- **Time-shift transport** (below the player) — jump **back / forward 30 minutes**
+  on any channel with an archive, *without needing EPG data*. Works purely by time.
+- **Program timeline** (resizable, below the transport) — scroll a channel's history
+  day by day back to its archive limit **without starting playback**; click a past
+  programme to play catch-up, or "Go Live". Drag the handle to resize the panel.
+
+## Notable behaviours
+
+- **Seek by time, no EPG required** — many channels have no guide data. The 30-minute
+  time-shift transport streams from any past instant up to live (Flussonic EVENT
+  playlist), so you can rewind without programme metadata.
+- **Faster startup + unsupported-codec hint** — playback starts as soon as the first
+  frames decode (high-bitrate channels no longer show audio-only for 10+ seconds). If
+  a channel's video genuinely can't be decoded on this Mac, an overlay suggests
+  **AirPlay to the TV**, which decodes it for you.
+- **Auto-refresh** — the playlist (fresh stream tokens) and EPG are re-fetched on every
+  launch and hourly thereafter, so playback isn't interrupted by stale tokens.
 
 ## Requirements
 

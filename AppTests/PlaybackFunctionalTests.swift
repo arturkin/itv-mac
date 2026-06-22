@@ -96,4 +96,25 @@ final class PlaybackFunctionalTests: XCTestCase {
         XCTAssertNotNil(seekable, "archive should expose a seekable range")
         withExtendedLifetime(player) {}
     }
+
+    func testTimeShiftStreamReachesReadyAndIsSeekable() async throws {
+        let url = try liveURL()
+        let playlist = try await PlaylistLoader().load(from: url)
+        let channel = try XCTUnwrap(playlist.channels.first { $0.hasArchive },
+                                    "need at least one channel with archive")
+        let now = Date()
+        // Seek purely by time — 30 minutes back — with no EPG involved at all.
+        let target = now.addingTimeInterval(-PlayerController.defaultSeekInterval)
+        let shiftURL = try XCTUnwrap(ArchiveURLBuilder.timeShiftURL(for: channel, to: target, now: now))
+        XCTAssertTrue(shiftURL.lastPathComponent.contains("-now.m3u8"),
+                      "time-shift uses the growing EVENT playlist, got \(shiftURL.lastPathComponent)")
+
+        let item = AVPlayerItem(url: shiftURL)
+        let player = AVPlayer(playerItem: item)
+        let ready = await waitUntilReady(item, timeout: 25)
+        XCTAssertTrue(ready, "time-shift stream should reach readyToPlay (err=\(String(describing: item.error)))")
+        let seekable = item.seekableTimeRanges.last?.timeRangeValue
+        XCTAssertNotNil(seekable, "time-shift stream should expose a seekable range to scrub within")
+        withExtendedLifetime(player) {}
+    }
 }

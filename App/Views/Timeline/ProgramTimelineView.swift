@@ -21,7 +21,7 @@ struct ProgramTimelineView: View {
             Divider().overlay(Theme.separator)
             content
         }
-        .frame(height: 210)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.surface)
         .onChange(of: channel.id) { _, _ in day = cal.startOfDay(for: Date()) }
     }

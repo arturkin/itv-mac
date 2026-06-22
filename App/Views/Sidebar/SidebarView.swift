@@ -8,18 +8,6 @@ struct SidebarView: View {
         @Bindable var model = model
 
         List(selection: $model.selectedChannelID) {
-            if model.searchText.isEmpty && !model.recents.isEmpty {
-                Section("Continue Watching") {
-                    ForEach(model.recents.prefix(6)) { item in
-                        Button { model.replay(item) } label: {
-                            Label(item.title, systemImage: item.programmeStart == nil ? "dot.radiowaves.left.and.right" : "clock.arrow.circlepath")
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
             ForEach(model.sidebarSections) { section in
                 Section(section.title) {
                     if section.id == "__favorites" {

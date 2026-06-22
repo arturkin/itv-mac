@@ -31,6 +31,28 @@ public enum ArchiveURLBuilder {
         url(for: channel, filename: "timeshift_abs-\(unix(date)).m3u8")
     }
 
+    // MARK: - Time-shift (EPG-independent)
+
+    /// Clamps an absolute instant into the channel's archive window
+    /// `[now - recDays·86400, now)`. Returns `nil` when the channel has no
+    /// archive, or when `date` is at/after `now` (the caller should go live).
+    /// This is the core of seeking purely by time, with no EPG data.
+    public static func clampToArchiveWindow(_ date: Date, recDays: Int, now: Date = Date()) -> Date? {
+        guard recDays > 0 else { return nil }
+        guard date < now else { return nil }
+        let windowStart = now.addingTimeInterval(-Double(recDays) * 86_400)
+        return max(date, windowStart)
+    }
+
+    /// A continuous "play from this past instant up to the live edge" URL,
+    /// built without any EPG. Uses the growing EVENT playlist
+    /// (`index-<startUnix>-now.m3u8`) so the native scrubber covers `[date, now]`.
+    /// Returns `nil` if the channel has no archive or `date` is not in the past.
+    public static func timeShiftURL(for channel: Channel, to date: Date, now: Date = Date()) -> URL? {
+        guard let start = clampToArchiveWindow(date, recDays: channel.recDays, now: now) else { return nil }
+        return inProgressURL(for: channel, start: start)
+    }
+
     /// Picks the right mode + URL to catch up on `programme`, clamped to the
     /// channel's archive window. Returns `nil` when the programme isn't playable
     /// as catch-up (no archive, fully outside the window, or entirely in the future).

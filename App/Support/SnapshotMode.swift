@@ -53,9 +53,9 @@ enum SnapshotMode {
         model.selectedChannelID = channel.id
         log.append("selected=\(channel.name) archiveDays=\(channel.recDays)")
 
-        // Seed favorites + Continue Watching (in memory only) so those sections render.
+        // Seed favorites (in memory only) so that section renders.
         let favIDs = Array(channels.prefix(3).map(\.id))
-        model.seedForSnapshot(favorites: favIDs, recents: makeRecents(channels: channels, index: model.snapshot?.index))
+        model.seedForSnapshot(favorites: favIDs)
 
         // Decode a real frame straight from the user's streams (forces video decode).
         var poster: NSImage?
@@ -183,16 +183,6 @@ enum SnapshotMode {
         let now = Date()
         let range = now.addingTimeInterval(-6 * 3600)...now.addingTimeInterval(-600)
         return index.programmes(channelID: channelID, in: range).last(where: { $0.hasEnded(at: now) })
-    }
-
-    private static func makeRecents(channels: [Channel], index: EPGIndex?) -> [RecentItem] {
-        let now = Date()
-        return channels.prefix(4).map { ch in
-            if let p = pastProgramme(channelID: ch.id, index: index) {
-                return RecentItem(channelID: ch.id, programmeStart: p.start, title: p.title, lastPlayed: now)
-            }
-            return RecentItem(channelID: ch.id, programmeStart: nil, title: ch.name, lastPlayed: now)
-        }
     }
 
     private static func searchQuery(channels: [Channel]) -> String? {
@@ -389,20 +379,6 @@ private struct SnapshotSidebar: View {
 
         VStack(alignment: .leading, spacing: 1) {
             searchField
-
-            if model.searchText.isEmpty && !model.recents.isEmpty {
-                header("Continue Watching")
-                ForEach(model.recents.prefix(4)) { item in
-                    Label {
-                        Text(item.title).foregroundStyle(Theme.textPrimary).lineLimit(1)
-                    } icon: {
-                        Image(systemName: item.programmeStart == nil ? "dot.radiowaves.left.and.right" : "clock.arrow.circlepath")
-                            .foregroundStyle(item.programmeStart == nil ? Theme.live : Theme.accent)
-                    }
-                    .font(.callout)
-                    .padding(.horizontal, 12).padding(.vertical, 3)
-                }
-            }
 
             ForEach(Array(sections.prefix(3))) { section in
                 header(section.title)

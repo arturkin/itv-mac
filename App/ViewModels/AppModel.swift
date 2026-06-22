@@ -23,7 +23,6 @@ final class AppModel {
     var selectedChannelID: String?
     var searchText = ""
     private(set) var favorites: [String] = []
-    private(set) var recents: [RecentItem] = []
 
     let player = PlayerController()
 
@@ -33,19 +32,35 @@ final class AppModel {
     }
     private static let urlKey = "playlistURL"
 
+    /// Persisted height of the resizable bottom EPG/timeline panel (points).
+    var timelineHeight: Double {
+        didSet { UserDefaults.standard.set(timelineHeight, forKey: Self.timelineHeightKey) }
+    }
+    private static let timelineHeightKey = "timelineHeight"
+    static let minTimelineHeight: Double = 120
+    static let maxTimelineHeight: Double = 520
+
+    /// How often the playlist (fresh tokens) and EPG are auto-refreshed.
+    static let autoRefreshInterval: TimeInterval = 60 * 60
+
     private let loader: PlaylistLoader
     private let epgStore: EPGStore
     private let persistence: PersistenceStore?
     private var resumeMap: [String: Double] = [:]
     private let isUITest: Bool
     private var isRecovering = false
+    private var autoRefreshTask: Task<Void, Never>?
 
     init() {
         let cacheDir = Self.cachesDirectory()
         loader = PlaylistLoader()
-        epgStore = EPGStore(cacheDirectory: cacheDir)
+        // Keep the cached guide fresh: re-fetch when older than the auto-refresh
+        // cadence so a cold start never shows a badly stale EPG.
+        epgStore = EPGStore(cacheDirectory: cacheDir, maxAge: Self.autoRefreshInterval)
         persistence = try? PersistenceStore(directory: Self.supportDirectory())
         playlistURLString = UserDefaults.standard.string(forKey: Self.urlKey) ?? ""
+        let savedHeight = UserDefaults.standard.object(forKey: Self.timelineHeightKey) as? Double
+        timelineHeight = min(max(savedHeight ?? 210, Self.minTimelineHeight), Self.maxTimelineHeight)
         isUITest = CommandLine.arguments.contains("-uitest")
 
         // Test/QA seam: an env override lets the QA harness drive the real app
@@ -64,8 +79,26 @@ final class AppModel {
 
     func bootstrap() async {
         guard !isUITest else { return }
-        await loadFavoritesAndRecents()
-        if hasPlaylistURL, playlist == nil { await loadLibrary() }
+        await loadFavorites()
+        if hasPlaylistURL { await loadLibrary() }
+        startAutoRefresh()
+    }
+
+    /// Periodically re-fetch the playlist (fresh stream tokens) and EPG so the
+    /// next session — and a long-running one — starts with valid, current data
+    /// and playback isn't interrupted by stale tokens. Non-disruptive: it never
+    /// touches the currently-playing item.
+    func startAutoRefresh(interval: TimeInterval = autoRefreshInterval) {
+        guard !isUITest else { return }
+        autoRefreshTask?.cancel()
+        autoRefreshTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard let self, !Task.isCancelled else { return }
+                _ = await self.refreshPlaylist()
+                await self.loadEPG(forceRefresh: true)
+            }
+        }
     }
 
     func loadLibrary() async {
@@ -100,10 +133,9 @@ final class AppModel {
         return true
     }
 
-    private func loadFavoritesAndRecents() async {
+    private func loadFavorites() async {
         guard let persistence else { return }
         favorites = await persistence.loadFavorites()
-        recents = await persistence.loadRecents()
         resumeMap = await persistence.loadResume()
     }
 
@@ -125,19 +157,6 @@ final class AppModel {
     func playCatchUp(_ programme: Programme, on channel: Channel) -> Bool {
         selectedChannelID = channel.id
         return player.playCatchUp(channel, programme: programme)
-    }
-
-    /// Re-open a recently-watched item: live if it was live, else the same
-    /// programme reconstructed from the EPG (falls back to live).
-    func replay(_ item: RecentItem) {
-        guard let channel = channel(for: item.channelID) else { return }
-        selectedChannelID = channel.id
-        if let start = item.programmeStart,
-           let programme = snapshot?.index.programme(channelID: channel.id, at: start),
-           player.playCatchUp(channel, programme: programme) {
-            return
-        }
-        player.playLive(channel)
     }
 
     // MARK: - Favorites
@@ -220,16 +239,6 @@ final class AppModel {
                 self.isRecovering = false
             }
         }
-        player.onPlaybackStarted = { [weak self] channel, programme in
-            guard let self else { return }
-            let item = RecentItem(channelID: channel.id,
-                                  programmeStart: programme?.start,
-                                  title: programme?.title ?? channel.name,
-                                  lastPlayed: Date())
-            self.recents.removeAll { $0.id == item.id }
-            self.recents.insert(item, at: 0)
-            self.persist { await $0.addRecent(item) }
-        }
     }
 
     private func persist(_ work: @escaping @Sendable (PersistenceStore) async -> Void) {
@@ -251,12 +260,11 @@ final class AppModel {
 
     // MARK: - Snapshot seam
 
-    /// Seeds favorites/recents **in memory only** (no disk write) so the headless
-    /// snapshot harness can render the Favorites and Continue Watching sections
-    /// without polluting the user's real persisted state. Snapshot-mode only.
-    func seedForSnapshot(favorites: [String], recents: [RecentItem]) {
+    /// Seeds favorites **in memory only** (no disk write) so the headless snapshot
+    /// harness can render the Favorites section without polluting the user's real
+    /// persisted state. Snapshot-mode only.
+    func seedForSnapshot(favorites: [String]) {
         self.favorites = favorites
-        self.recents = recents
     }
 
     // MARK: - UI-test fixture (deterministic, offline)

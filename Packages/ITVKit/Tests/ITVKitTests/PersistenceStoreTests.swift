@@ -28,30 +28,6 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertNil(cleared)
     }
 
-    func testRecentsDedupeAndOrder() async throws {
-        let store = try PersistenceStore(directory: tempDir())
-        let base = Date(timeIntervalSince1970: 1000)
-        await store.addRecent(RecentItem(channelID: "a", programmeStart: nil, title: "A1", lastPlayed: base))
-        await store.addRecent(RecentItem(channelID: "b", programmeStart: nil, title: "B1", lastPlayed: base.addingTimeInterval(10)))
-        // Re-watch A (same id) → should move to front, not duplicate.
-        await store.addRecent(RecentItem(channelID: "a", programmeStart: nil, title: "A2", lastPlayed: base.addingTimeInterval(20)))
-
-        let recents = await store.loadRecents()
-        XCTAssertEqual(recents.count, 2)
-        XCTAssertEqual(recents.first?.channelID, "a")
-        XCTAssertEqual(recents.first?.title, "A2")
-    }
-
-    func testRecentsCap() async throws {
-        let store = try PersistenceStore(directory: tempDir(), recentsLimit: 3)
-        for i in 0..<10 {
-            await store.addRecent(RecentItem(channelID: "ch\(i)", programmeStart: nil, title: "T\(i)", lastPlayed: Date(timeIntervalSince1970: Double(i))))
-        }
-        let recents = await store.loadRecents()
-        XCTAssertEqual(recents.count, 3)
-        XCTAssertEqual(recents.first?.channelID, "ch9") // most recent kept
-    }
-
     func testCorruptFileDegradesToDefault() async throws {
         let dir = tempDir()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
